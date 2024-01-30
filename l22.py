@@ -1,189 +1,96 @@
-import itertools as it
-import time
-n: int;
-l: int;
-k: int;
-count: int;
-summ: int
-dangers_places: list;
-places: list;
-new_file: list;
-dangers_places_double: list;
-places_double: list;
-free_place: list;
-save_in_file: list
-def check_in(first, second):
-    for s in first:
-        if list(s) in second:
-            return False
+from numpy import array
+
+vars: list
+allVar: list
+def varios(board: list, x: int, y: int, l: int, n: int, varss: list, allVar: list) -> None:
+    while True:#перебор всех ходов
+        y += 1
+        if y >= n:  #если конец строки, то идем на следующую
+            y = 0
+            x += 1
+        if x >= n:  #если конец таблицы, то выходим
             break
-        else:
-            return True
-def dangers_places_def(n:int, placess:list, c:int)-> list:  # поиск опасных "координат", переменная отвечает за добавление найденных опасных ходов в общий список. Если с = 1, то будут добавлены, если с = 0 - нет
-    # везде есть проверка на то, чтобы значения были в пределах доски
-    danger = []
-    if c == 1:
-        for i in placess:
-            # опасные места по горизонтальной линии
-            for x in range(0, n + 1):
-                danger.append([x, i[1]])
-            # опасные места по вертикали
-            for y in range(0, n + 1):
-                danger.append([i[0], y])
-            # опасные места по главной диагонали
-            for j in range(1, n + 1):
-                danger.append([i[0] + j, i[1] + j])
-            if i[0] != 0 and i[1] != 0:
-                if i[0] < i[1]:
-                    minn = i[0]
-                else:
-                    minn = i[1]
-                for j in range(minn, 0, -1):
-                    danger.append([i[0] - j, i[1] - j])
-            # опасные места по побочной диагонали
-            if i[1] != 0:
-                if i[0] < i[1]:
-                    minn = i[0]
-                else:
-                    minn = i[1]
-                for j in range(1, minn + 1):
-                    if i[1] - j >= 0:
-                        danger.append([i[0] + j, i[1] - j])
-            if i[0] != 0:
-                if i[0] > i[1]:
-                    minn = i[0]
-                else:
-                    minn = i[1]
-                for j in range(0, minn + 1):
-                    if i[0] - j >= 0:
-                        danger.append([i[0] - j, i[1] + j])
-            # опасные места, конь
-            if i[0] + 2 <= n and i[1] + 1 <= n:
-                danger.append([i[0] + 2, i[1] + 1])
-            if i[0] + 1 <= n and i[1] + 2 <= n:
-                danger.append([i[0] + 1, i[1] + 2])
-            if i[0] - 2 >= 0 and i[1] - 1 >= 0:
-                danger.append([i[0] - 2, i[1] - 1])
-            if i[0] - 1 >= 0 and i[1] - 2 >= 0:
-                danger.append([i[0] - 1, i[1] - 2])
-            if i[0] + 1 >= 0 and i[1] - 2 >= 0:
-                danger.append([i[0] + 1, i[1] - 2])
-            if i[0] + 2 >= 0 and i[1] - 1 >= 0:
-                danger.append([i[0] + 2, i[1] - 1])
-            if i[0] - 1 >= 0 and i[1] + 2 >= 0:
-                danger.append([i[0] - 1, i[1] + 2])
-            if i[0] - 2 >= 0 and i[1] + 1 >= 0:
-                danger.append([i[0] - 2, i[1] + 1])
+        if board[x][y] == 0:  #Если место доступно для хода, то ставим фигуры
+            copy_board=array(board)
+            copy_var = [i for i in varss]
+            put_figure(copy_board, n, x, y, copy_var)#размещение фигуры
+            if l - 1 == 0:#нужен ли еще подбор
+                allVar.append(copy_var)
+                if len(allVar) == 1:
+                    print_board_in_console(copy_board)
+                continue
+            #продолжение подбора
+            varios(copy_board, x, y + 1, l - 1, n, copy_var, allVar)
+def search_place(board: list, x: int, y: int, n: int) -> None:#поиск возможных ходов
+    #Ходы по осям и диагоналям
+    for delta in range(1, n):
+        put_danger(board, x + delta, y - delta, n)
+        put_danger(board, x - delta, y + delta, n)
+        put_danger(board, x + delta, y + delta, n)
+        put_danger(board, x-delta, y-delta, n)
+        put_danger(board, x, delta, n)
+        put_danger(board, delta, y, n)
+    #ходы слона
+    put_danger(board, x + 2, y + 1, n)
+    put_danger(board, x + 2, y - 1, n)
+    put_danger(board, x-2, y - 1, n)
+    put_danger(board, x-2, y + 1, n)
+    put_danger(board, x - 1, y - 2, n)
+    put_danger(board, x + 1, y - 2, n)
+    put_danger(board, x-1, y + 2, n)
+    put_danger(board, x+1, y + 2, n)
+def put_danger(board: list, x: int, y: int, n: int) -> bool:#записываем клетки с возможным ударом
+    if not (0 <= x < n and 0 <= y < n):#проверка на выход за пределы поля
+        return False
+    if board[x][y] != 1:#проверка на поставленную фигуру
+        board[x][y] = 2
+        return True
     else:
-        i = placess
-        list(i)
-        danger = []
-        # опасные места по горизонтальной линии
-        for x in range(0, n + 1):
-            danger.append([x, i[1]])
-        # опасные места по вертикали
-        for y in range(0, n + 1):
-            danger.append([i[0], y])
-        # опасные места по главной диагонали
-        for j in range(1, n + 1):
-            danger.append([i[0] + j, i[1] + j])
-        if i[0] != 0 and i[1] != 0:
-            if i[0] < i[1]:
-                    minn = i[0]
-            else:
-                minn = i[1]
-            for j in range(minn, 0, -1):
-                danger.append([i[0] - j, i[1] - j])
-        # опасные места по побочной диагонали
-        if i[1] != 0:
-            if i[0] < i[1]:
-                minn = i[0]
-            else:
-                minn = i[1]
-            for j in range(1, minn + 1):
-                if i[1] - j >= 0:
-                    danger.append([i[0] + j, i[1] - j])
-        if i[0] != 0:
-            if i[0] > i[1]:
-                minn = i[0]
-            else:
-                minn = i[1]
-            for j in range(0, minn + 1):
-                if i[0] - j >= 0:
-                    danger.append([i[0] - j, i[1] + j])
-        # опасные места, конь
-        if i[0] + 2 <= n and i[1] + 1 <= n:
-            danger.append([i[0] + 2, i[1] + 1])
-        if i[0] + 1 <= n and i[1] + 2 <= n:
-                danger.append([i[0] + 1, i[1] + 2])
-        if i[0] - 2 >= 0 and i[1] - 1 >= 0:
-                danger.append([i[0] - 2, i[1] - 1])
-        if i[0] - 1 >= 0 and i[1] - 2 >= 0:
-                danger.append([i[0] - 1, i[1] - 2])
-        if i[0] + 1 >= 0 and i[1] - 2 >= 0:
-                danger.append([i[0] + 1, i[1] - 2])
-        if i[0] + 2 >= 0 and i[1] - 1 >= 0:
-                danger.append([i[0] + 2, i[1] - 1])
-        if i[0] - 1 >= 0 and i[1] + 2 >= 0:
-                danger.append([i[0] - 1, i[1] + 2])
-        if i[0] - 2 >= 0 and i[1] + 1 >= 0:
-                danger.append([i[0] - 2, i[1] + 1])
-    for x in places:
-        danger.append(x)
-    return danger
-def free_place():
-    global n, dangers_places
-    free = []
-    for x in range(n):
-        for y in range(n):
-            if [x, y] not in dangers_places:
-                free.append([x, y])
-    for x in places:
-        free.append(x)
-    return free
+        return True
+def put_figure(board: list, n: int, x: int, y: int, vars: list) -> None:#размещение фигуры на доске
+    board[x][y] = 1
+    vars.append((x, y))
+    search_place(board, x, y, n)
+def save_vars(vars: list) -> None:#запись решений в файл
+    with open("output.txt", "w") as f:
+        if not len(vars):
+            f.write("no solutions")
+        else:
+            for i_g in vars:
+                f.writelines(f"{str(i)} " for i in i_g)
+                f.writelines('\n')
+    print("Количество решений:", len(vars))
+def print_board_in_console(board: list) -> None:#вывод доски
 
-def search(combin):
-    global places, new_file
-    check = True
-    place = [i for i in places]
-    for option in combin:
-        check = True
-        for option_one in option:
-            if option_one not in dangers_places_def(n, place, 1) and check_in(place, dangers_places_def(n, option_one, 0)):
-                place.append(tuple(option_one))
-            else:
-                place = [i for i in places]
-                check = False
-                break
-        if check:
-            new_file.writelines(f'{m} ' for m in place)
-            new_file.writelines('\n')
-        place = [i for i in places]
-def get_data() -> int:
-    with open(f'input.txt', 'r', encoding='utf-8') as file:
-        n, l, k = map(int, file.readline().split())
-        places = []
+    for m in board:
+        s = ""
+        for r in m:
+            if r == 1:#если стоит фигура, то добавляем '#'
+                s += " " + '#'
+            elif r == 2:#если клетка с возможным ходом, то добавляем '*'
+                s += " " + '*'
+            else:#если клетка пустая, то добавляем '0'
+                s += " " + '0'
+        print(s)
+def main() -> None:
+    vars = []
+    allVar = []
+    with open("input.txt", "r") as f_f:
+        n, l, k = map(int, f_f.readline().split())
+        board = array([[0] * n for _ in range(n)])
+        #Добавление расставленных фигур на доску
         for _ in range(k):
-            a = tuple(map(int, file.readline().split()))
-            places.append(a)
-        return n, l, k, places
-def main():
-    start_time = time.time()
-    global dangers_places, places, n, k, new_file, dangers_places_double, places_double, l, free_place, save_in_file, first, places_for_print
-    n, l, k, places = get_data()
-    summ = 0
-    first = False
-    save_in_file = []
-    dangers_places = dangers_places_def(n, places, 1)
-    free_place = free_place()
-    combinations = list(it.combinations(free_place, l))
-    print(combinations)
-    new_file = open('output.txt', 'w+')
-    search(combinations)
-    new_file.close()
-    end_time = time.time()
-    print('Time: ', end_time - start_time)
+            x, y = map(int, f_f.readline().split())
+            put_figure(board, n, x, y, vars)
+    #Если нужно поставить 0 фигур, то просто печатаем доску
+    if l == 0:
+        if not (len(vars) == 0):
+            allVar.append(vars)
+        print_board_in_console(board)
+        return save_vars(allVar)
+    #подбираем расстановки
+    varios(board, 0, -1, l, n, vars, allVar)
+    save_vars(allVar)
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
-
